@@ -1,0 +1,90 @@
+---
+- name: Install Docker and Configure Permissions on BES RHEL Hosts
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  #become: true
+
+  tasks:
+    - name: Remove old versions of Docker and associated packages
+      ansible.builtin.yum:
+        name:
+          - docker
+          - docker-client
+          - docker-client-latest
+          - docker-common
+          - docker-latest
+          - docker-latest-logrotate
+          - docker-logrotate
+          - docker-engine
+          - podman
+          - runc
+        state: absent
+
+    - name: Install yum-utils package
+      ansible.builtin.yum:
+        name: yum-utils
+        state: present
+
+    - name: Add Artifactory Docker CE Repo
+      ansible.builtin.copy:
+        content: |
+          [docker]
+          name=Docker CE Stable Centos
+          baseurl=https://engci-maven-master.cisco.com/artifactory/download.docker.com/linux/centos/8/x86_64/stable
+          enabled=1
+          gpgcheck=1
+          gpgkey=https://download.docker.com/linux/centos/gpg
+          priority=1
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: '0644'
+
+    - name: Install Docker CE and associated tools
+      ansible.builtin.yum:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Create /data/docker directory
+      ansible.builtin.file:
+        path: /data/docker
+        state: directory
+        mode: '0755'    
+
+    - name: Create /etc/docker/daemon.json file with content
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        mode: '0644'    
+        backup: true
+        content: |
+          {
+            "data-root": "/data/docker"
+          }
+
+    - name: Start and enable Docker service
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Create local docker group
+      ansible.builtin.group:
+        name: docker
+        state: present
+        local: true
+
+    - name: Add user 'stevenma' to the local docker group
+      ansible.builtin.user:
+        name: stevenma
+        groups: docker
+        append: true
+
+    - name: Change group ownership of docker.sock to the local docker group
+      ansible.builtin.file:
+        path: /var/run/docker.sock
+        group: docker
+        mode: '0660'
