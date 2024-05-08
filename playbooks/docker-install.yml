@@ -31,7 +31,7 @@
         content: |
           [docker]
           name=Docker CE Stable Centos
-          baseurl=https://engci-maven-master.cisco.com/artifactory/download.docker.com/linux/centos/8/x86_64/stable
+          baseurl=https://xxxxxxxx/artifactory/download.docker.com/linux/centos/8/x86_64/stable
           enabled=1
           gpgcheck=1
           gpgkey=https://download.docker.com/linux/centos/gpg
@@ -77,9 +77,9 @@
         state: present
         local: true
 
-    - name: Add user 'stevenma' to the local docker group
+    - name: Add user 'Sudheer' to the local docker group
       ansible.builtin.user:
-        name: stevenma
+        name: Sudheer
         groups: docker
         append: true
 
